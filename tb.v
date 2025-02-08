@@ -1,5 +1,6 @@
 `define CHAR_WIDTH 8
 `define MAX_CHAR 80
+`timescale 1ns/1ps 
 
 module tb;
     reg clk, rst;
@@ -11,8 +12,9 @@ module tb;
     // Instantiate Single Cycle CPU
     SingleCycleCPU CPU (.clk(clk), .reset(rst), .halt(halt));
 
-    // Clock Generation (Period = 10 time units)
-    always #5 clk = ~clk;
+    // Clock Period = 10 time units
+    always
+        #5 clk = ~clk;
 
     always @(negedge clk)
         if (halt)

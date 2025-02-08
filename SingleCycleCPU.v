@@ -33,7 +33,7 @@ assign halt = !(opcode == `OPCODE_R || opcode == `OPCODE_I ||
 
 
 // Program Counter
-Program_Counter P(.clk(clk), .reset(reset), .PC_in(PC_in), .PC_out(PC));
+Program_Counter P(.clk(clk), .reset(reset), .WE(1'b1), .PC_in(PC_in), .PC_out(PC));
 
 // PC Adder
 PCplus4 PCplus(.PC(PC), .PC_Plus_4(PC_Plus_4));
@@ -45,7 +45,7 @@ Instruction_Memory InstMem(.clk(clk), .reset(reset), .read_addresss(PC), .instru
 Reg_File Registers(.clk(clk), .reset(reset), .RegWrite(RegWrite), .Rs1(Rs1), .Rs2(Rs2), .Rd(Rd), .Write_data(WriteData), .read_data1(data1), .read_data2(data2));
 
 // Immediate Generator
-ImmGen ImmGen(.instruction(instruction), .immExt(imm));
+ImmGen ImmGen(.opcode(opcode), .instruction(instruction), .immExt(imm));
 
 // Control Unit
 Control_Unit Control(.opcode(opcode), .Branch(Branch), .MemRead(MemRead), .MemtoReg(MemtoReg), .MemWrite(MemWrite), .ALUSrc(ALUSrc), .RegWrite(RegWrite));
@@ -76,17 +76,20 @@ Mux3 Mem_Mux(.sel3(MemtoReg), .A3(ALU_Result), .B3(ReadData), .Mux_out3(WriteDat
 
 endmodule
 
+
 // Program Counter
 module Program_Counter(
-    input clk, reset,
+    input clk, reset, WE, 
     input      [31:0] PC_in,
     output reg [31:0] PC_out
 );
 
-always @(posedge clk) begin
-if(reset)
-    PC_out <= 32'b0;
-else 
+parameter init = 0;
+
+always @(negedge clk or negedge reset) begin
+if(!reset)
+    PC_out <= init;
+else if (WE)
     PC_out <= PC_in;
 end 
 
@@ -109,18 +112,18 @@ module Instruction_Memory(
 
 reg [7:0] IMem [0:1024];
 wire [31:0] InstAddr;
-integer i;
+// integer i;
 
 assign InstAddr = read_addresss & 32'hfffffffc; // word alignment
 assign instruction_out = {IMem[InstAddr+3], IMem[InstAddr+2], IMem[InstAddr+1], IMem[InstAddr]};
 
-always @(posedge clk) begin
-    if(reset) begin
-        for (i = 0; i < 1024; i = i + 4) begin
-            {IMem[i+3], IMem[i+2], IMem[i+1], IMem[i]} <= 32'b0;  // Reset all memory locations
-        end
-    end
-end
+// always @(posedge clk) begin
+//     if(reset) begin
+//         for (i = 0; i < 1024; i = i + 4) begin
+//             {IMem[i+3], IMem[i+2], IMem[i+1], IMem[i]} <= 32'b0;  // Reset all memory locations
+//         end
+//     end
+// end
 endmodule
 
 // Register File
@@ -132,16 +135,13 @@ module Reg_File(
 );
 
 reg [31:0] Registers [0:31];
-integer i;
 
-always @(posedge clk) begin
-    if (reset) begin
-        for(i=0; i <= 32; i=i+1) begin
-            Registers[i] <= 32'b0;
-        end 
-    end else if(RegWrite) begin
+
+always @(negedge clk) begin
+    if(RegWrite) begin
         Registers[Rd] <= Write_data;
-    end
+    end 
+        Registers[0] <= 0;
 end
 
 assign read_data1 = (Rs1 == 0) ? 32'h00000000 : Registers[Rs1];
@@ -152,9 +152,9 @@ endmodule
 // immediate Generator
 module ImmGen(
     input [31:0] instruction,
+    input [6:0] opcode,
     output reg [31:0] immExt
 );
-    wire opcode = instruction[6:0];
 
 always @(*) begin
     case(opcode)
@@ -177,7 +177,8 @@ module Control_Unit(
 always @(*) begin
     case(opcode)
     7'b0110011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b001000; // R-type
-    7'b0010011, 7'b0000011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b111100; // I-type
+    7'b0010011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b101000; // I-type
+    7'b0000011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b111100; // I-type
     7'b0100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b100010; // S-type
     7'b1100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b000001; // B-type
     7'b1101111 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b000001; // J-type
@@ -198,8 +199,8 @@ always @(*) begin
     case(Control_in)
     4'b0000 : begin zero <= 0; ALU_Result <= A + B; end // add
     4'b0001 : begin zero <= 0; ALU_Result <= A - B; end // sub
-    4'b0010 : begin zero <= 0; ALU_Result <= A * B; end // mul
-    4'b0011 : begin zero <= 0; ALU_Result <= A / B; end // div
+    4'b0010 : begin zero <= 0; ALU_Result <= $signed(A) * $signed(B); end // mul
+    4'b0011 : begin zero <= 0; ALU_Result <= $signed(A) / $signed(B); end // div
     4'b0100 : begin if(A==B) zero <= 1; else zero <= 0; ALU_Result <= A - B; end // beq
     4'b0101 : begin if(A<B) zero <= 1; else zero <= 0; ALU_Result <= A - B; end // blt
     4'b0110 : begin if(A>=B) zero <= 1; else zero <= 0; ALU_Result <= A - B; end // bge
@@ -223,8 +224,8 @@ casex ({opcode, fun3, fun7})
     17'b0010011_000_xxxxxxx : Control_out <= 4'b0000; // ADDI
     17'b0110011_000_0100000 : Control_out <= 4'b0001; // SUB
     17'b0110011_000_0000001 : Control_out <= 4'b0010; // MUL
-    17'b0110011_100_0100001 : Control_out <= 4'b0011; // DIV
-    17'b1100011_000_xxxxxxx : Control_out <= 4'b0100; // beg
+    17'b0110011_100_0000001 : Control_out <= 4'b0011; // DIV
+    17'b1100011_000_xxxxxxx : Control_out <= 4'b0100; // beq
     17'b1100011_100_xxxxxxx : Control_out <= 4'b0101; // blt
     17'b1100011_101_xxxxxxx : Control_out <= 4'b0110; // bge
     17'b1101111_xxx_xxxxxxx : Control_out <= 4'b0111; // jal
@@ -247,12 +248,8 @@ assign DataAddrW = DataAddr & 32'hfffffffc;
 assign ReadData = (MemRead) ? {Mem[DataAddrW+3], Mem[DataAddrW+2], Mem[DataAddrW+1], Mem[DataAddrW]} : 32'b00;
 
 
-always @(posedge clk) begin 
-    if (reset) begin 
-        for(i=0; i <1024; i=i+1) begin 
-            Mem[i] <= 8'b00;
-        end
-    end else if(MemWrite) begin
+always @(negedge clk) begin 
+    if(MemWrite) begin
         Mem[DataAddrW] <= WriteData[7:0];
         Mem[DataAddrW+1] <= WriteData[15:8];
         Mem[DataAddrW+2] <= WriteData[23:16];
