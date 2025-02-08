@@ -1,0 +1,297 @@
+$date
+	Fri Feb  7 23:00:36 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module tb $end
+$var wire 1 ! halt $end
+$var reg 1 " clk $end
+$var reg 1 # exit $end
+$var reg 640 $ mem_in_fname [639:0] $end
+$var reg 640 % mem_out_fname [639:0] $end
+$var reg 640 & regs_in_fname [639:0] $end
+$var reg 640 ' regs_out_fname [639:0] $end
+$var reg 1 ( rst $end
+$var reg 640 ) signal_dump_fname [639:0] $end
+$scope module CPU $end
+$var wire 1 " clk $end
+$var wire 1 ( reset $end
+$var wire 1 * zero $end
+$var wire 7 + opcode [6:0] $end
+$var wire 32 , instruction [31:0] $end
+$var wire 32 - imm [31:0] $end
+$var wire 1 ! halt $end
+$var wire 7 . fun7 [6:0] $end
+$var wire 3 / fun3 [2:0] $end
+$var wire 32 0 data2 [31:0] $end
+$var wire 32 1 data1 [31:0] $end
+$var wire 1 2 and_out $end
+$var wire 32 3 WriteData [31:0] $end
+$var wire 32 4 Sum_out [31:0] $end
+$var wire 5 5 Rs2 [4:0] $end
+$var wire 5 6 Rs1 [4:0] $end
+$var wire 1 7 RegWrite $end
+$var wire 32 8 ReadData [31:0] $end
+$var wire 5 9 Rd [4:0] $end
+$var wire 32 : PC_in [31:0] $end
+$var wire 32 ; PC_Plus_4 [31:0] $end
+$var wire 32 < PC [31:0] $end
+$var wire 32 = Mux_out [31:0] $end
+$var wire 1 > MemtoReg $end
+$var wire 1 ? MemWrite $end
+$var wire 1 @ MemRead $end
+$var wire 4 A Control_out [3:0] $end
+$var wire 1 B Branch $end
+$var wire 32 C ALU_Result [31:0] $end
+$var wire 1 D ALUSrc $end
+$scope module ALU $end
+$var wire 4 E Control_in [3:0] $end
+$var wire 32 F B [31:0] $end
+$var wire 32 G A [31:0] $end
+$var reg 32 H ALU_Result [31:0] $end
+$var reg 1 * zero $end
+$upscope $end
+$scope module ALUC $end
+$var wire 3 I fun3 [2:0] $end
+$var wire 7 J fun7 [6:0] $end
+$var wire 7 K opcode [6:0] $end
+$var reg 4 L Control_out [3:0] $end
+$upscope $end
+$scope module ALU_mux $end
+$var wire 1 D sel $end
+$var wire 32 M Mux_out [31:0] $end
+$var wire 32 N B [31:0] $end
+$var wire 32 O A [31:0] $end
+$upscope $end
+$scope module Adder $end
+$var wire 32 P in_2 [31:0] $end
+$var wire 32 Q in_1 [31:0] $end
+$var wire 32 R Sum_out [31:0] $end
+$upscope $end
+$scope module And $end
+$var wire 1 2 and_out $end
+$var wire 1 * zero $end
+$var wire 1 B branch $end
+$upscope $end
+$scope module Control $end
+$var wire 7 S opcode [6:0] $end
+$var reg 1 D ALUSrc $end
+$var reg 1 B Branch $end
+$var reg 1 @ MemRead $end
+$var reg 1 ? MemWrite $end
+$var reg 1 > MemtoReg $end
+$var reg 1 7 RegWrite $end
+$upscope $end
+$scope module ImmGen $end
+$var wire 1 T opcode $end
+$var wire 32 U instruction [31:0] $end
+$var reg 32 V immExt [31:0] $end
+$upscope $end
+$scope module InstMem $end
+$var wire 32 W InstAddr [31:0] $end
+$var wire 1 " clk $end
+$var wire 1 ( reset $end
+$var wire 32 X read_addresss [31:0] $end
+$var wire 32 Y instruction_out [31:0] $end
+$var integer 32 Z i [31:0] $end
+$upscope $end
+$scope module Mem $end
+$var wire 32 [ DataAddr [31:0] $end
+$var wire 32 \ DataAddrW [31:0] $end
+$var wire 1 @ MemRead $end
+$var wire 1 ? MemWrite $end
+$var wire 1 " clk $end
+$var wire 1 ( reset $end
+$var wire 32 ] WriteData [31:0] $end
+$var wire 32 ^ ReadData [31:0] $end
+$var integer 32 _ i [31:0] $end
+$upscope $end
+$scope module Mem_Mux $end
+$var wire 32 ` A3 [31:0] $end
+$var wire 32 a B3 [31:0] $end
+$var wire 1 > sel3 $end
+$var wire 32 b Mux_out3 [31:0] $end
+$upscope $end
+$scope module P $end
+$var wire 1 " clk $end
+$var wire 1 ( reset $end
+$var wire 32 c PC_in [31:0] $end
+$var reg 32 d PC_out [31:0] $end
+$upscope $end
+$scope module PC_Mux $end
+$var wire 32 e B2 [31:0] $end
+$var wire 1 2 sel2 $end
+$var wire 32 f Mux_out2 [31:0] $end
+$var wire 32 g A2 [31:0] $end
+$upscope $end
+$scope module PCplus $end
+$var wire 32 h PC [31:0] $end
+$var wire 32 i PC_Plus_4 [31:0] $end
+$upscope $end
+$scope module Registers $end
+$var wire 5 j Rd [4:0] $end
+$var wire 1 7 RegWrite $end
+$var wire 5 k Rs1 [4:0] $end
+$var wire 5 l Rs2 [4:0] $end
+$var wire 32 m Write_data [31:0] $end
+$var wire 1 " clk $end
+$var wire 1 ( reset $end
+$var wire 32 n read_data2 [31:0] $end
+$var wire 32 o read_data1 [31:0] $end
+$var integer 32 p i [31:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+bx p
+bx o
+bx n
+bx m
+bx l
+bx k
+bx j
+bx i
+bx h
+bx g
+bx f
+bx e
+bx d
+bx c
+bx b
+bx a
+bx `
+bx _
+bx ^
+bx ]
+bx00 \
+bx [
+bx Z
+bx Y
+bx X
+bx00 W
+bx V
+bx U
+xT
+bx S
+bx R
+bx Q
+bx P
+bx O
+bx N
+bx M
+bx L
+bx K
+bx J
+bx I
+bx H
+bx G
+bx F
+bx E
+xD
+bx C
+xB
+bx A
+x@
+x?
+x>
+bx =
+bx <
+bx ;
+bx :
+bx 9
+bx 8
+x7
+bx 6
+bx 5
+bx 4
+bx 3
+x2
+bx 1
+bx 0
+bx /
+bx .
+bx -
+bx ,
+bx +
+x*
+b1110011011010010110111001100111011011000110010100101110011101100110001101100100 )
+1(
+b11100100110010101100111011100110101111101101111011101010111010000101110011010000110010101111000 '
+b111001001100101011001110111001101011111011010010110111000101110011010000110010101111000 &
+b110110101100101011011010101111101101111011101010111010000101110011010000110010101111000 %
+b1101101011001010110110101011111011010010110111000101110011010000110010101111000 $
+0#
+0"
+x!
+$end
+#5
+b0 8
+b0 ^
+b0 a
+02
+0D
+0>
+07
+0@
+0?
+0B
+1!
+b0 =
+b0 F
+b0 M
+b0 0
+b0 O
+b0 ]
+b0 n
+b0 1
+b0 G
+b0 o
+0T
+b100 :
+b100 c
+b100 f
+b0 .
+b0 J
+b0 5
+b0 l
+b0 /
+b0 I
+b0 6
+b0 k
+b0 +
+b0 K
+b0 S
+b0 9
+b0 j
+b0 4
+b0 R
+b0 e
+b0 -
+b0 N
+b0 P
+b0 V
+b0 ,
+b0 U
+b0 Y
+b0 W
+b100 ;
+b100 g
+b100 i
+b0 <
+b0 Q
+b0 X
+b0 d
+b0 h
+b10000000000 Z
+b100001 p
+b10000000000 _
+1"
+#10
+1#
+0"

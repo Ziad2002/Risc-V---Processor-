@@ -1,49 +1,62 @@
-`timescale 1ns/1ps
+`define CHAR_WIDTH 8
+`define MAX_CHAR 80
 
-module Program_Counter_tb;
-    reg clk, reset;
-    reg [31:0] PC_in;
-    wire [31:0] PC_out;
+module tb;
+    reg clk, rst;
+    reg exit;
+    wire halt;
+    reg [`CHAR_WIDTH*`MAX_CHAR-1:0] mem_in_fname, mem_out_fname, regs_in_fname, regs_out_fname;
+    reg [`CHAR_WIDTH*`MAX_CHAR-1:0] signal_dump_fname;
 
-    Program_Counter dut (
-        .clk(clk),
-        .reset(reset),
-        .PC_in(PC_in),
-        .PC_out(PC_out)
-    );
+    // Instantiate Single Cycle CPU
+    SingleCycleCPU CPU (.clk(clk), .reset(rst), .halt(halt));
 
-    always #5 clk = ~clk; // 10 ns period
+    // Clock Generation (Period = 10 time units)
+    always #5 clk = ~clk;
 
-    initial begin 
-        $dumpfile("Program_Counter.vcd");
-        $dumpvars(0, Program_Counter_tb);
-        
+    always @(negedge clk)
+        if (halt)
+            exit = 1;
 
-        // Initialize signals
-        clk = 0;
-        reset = 1;  // Start with reset active
-        PC_in = 32'h00000000;  // Default PC value
-
-        #10 reset = 0;
-
-        // Test Case 1: Normal PC update
-        #10 PC_in = 32'h00000004;  // Set PC to 4
-        #10 PC_in = 32'h00000008;  // Set PC to 8
-        #10 PC_in = 32'h0000000C;  // Set PC to 12
-
-        // Test Case 2: Reset behavior
-        #10 reset = 1;  // Apply reset
-        #10 reset = 0;  // Remove reset
-
-        // Test Case 3: Another normal PC update
-        #10 PC_in = 32'h00000010;  // Set PC to 16
-        #10 PC_in = 32'h00000014;  // Set PC to 20
-        #20 $finish;  // Stop simulation after all tests
-    end 
     initial begin
-        $monitor("Time=%0t | Reset=%b | PC_in=%h | PC_out=%h",
-                  $time, reset, PC_in, PC_out);
+        // Read command-line arguments for input/output filenames
+        if (!$value$plusargs("MEM_IN=%s", mem_in_fname))
+            mem_in_fname = "mem_in.hex";
+        if (!$value$plusargs("REGS_IN=%s", regs_in_fname))
+            regs_in_fname = "regs_in.hex";
+        if (!$value$plusargs("REGS_OUT=%s", regs_out_fname))
+            regs_out_fname = "regs_out.hex";
+        if (!$value$plusargs("MEM_OUT=%s", mem_out_fname))
+            mem_out_fname = "mem_out.hex";
+        if (!$value$plusargs("DUMP=%s", signal_dump_fname))
+            signal_dump_fname = "single.vcd";
+
+        // Initialize clock and reset
+        #0 rst = 0; exit = 0; clk = 0;
+        #0 rst = 1; 
+
+        // Load program memory and registers
+        #0 $readmemh(mem_in_fname, CPU.InstMem.IMem);
+        #0 $readmemh(regs_in_fname, CPU.Registers.Registers);
+
+        // Generate waveform dump for debugging
+        $dumpfile(signal_dump_fname);
+        $dumpvars();
+
+        // Monitor key signals in simulation
+        #0 $monitor($time, 
+            " PC=%08x | Instr=%08x | rs1=%d | rs2=%d | rd=%d | Branch=%b | MemRead=%b | MemtoReg=%b | MemWrite=%b | ALUSrc=%b | RegWrite=%b | Exit=%b",
+            CPU.PC, CPU.instruction, CPU.Rs1, CPU.Rs2, CPU.Rd, 
+            CPU.Branch, CPU.MemRead, CPU.MemtoReg, CPU.MemWrite, CPU.ALUSrc, CPU.RegWrite, exit
+        );
+
+        // Wait for halt condition to exit
+        wait(exit);
+      
+        // Write final memory and register state
+        #0 $writememh(regs_out_fname, CPU.Registers.Registers);
+        #0 $writememh(mem_out_fname, CPU.Mem.Mem);
+        
+        $finish;      
     end
-
-endmodule
-
+endmodule // tb

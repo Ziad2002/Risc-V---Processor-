@@ -1,7 +1,78 @@
+`define OPCODE_R 7'b0110011
+`define OPCODE_I 7'b0010011
+`define OPCODE_S 7'b0100011
+`define OPCODE_B 7'b1100011
+`define OPCODE_J 7'b1101111
+
+
+
 module SingleCycleCPU(
     input clk, reset,
     output halt
 );
+wire Branch, MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite, zero, and_out;
+wire [6:0] opcode;
+wire [4:0] Rs1, Rs2, Rd;
+wire [2:0] fun3;
+wire [6:0] fun7;
+wire [3:0] Control_out;
+wire [31:0] data1, data2, imm;
+wire [31:0] Mux_out, ALU_Result, ReadData, WriteData;
+wire [31:0] PC, instruction, PC_Plus_4, PC_in, Sum_out;
+
+assign Rs1 = instruction[19:15];
+assign Rs2 = instruction[24:20];
+assign Rd  = instruction[11:7];
+assign opcode = instruction[6:0];
+assign fun3 = instruction[14:12];
+assign fun7 = instruction[31:25];
+
+assign halt = !(opcode == `OPCODE_R || opcode == `OPCODE_I || 
+                opcode == `OPCODE_S || opcode == `OPCODE_B || 
+                opcode == `OPCODE_J);
+
+
+// Program Counter
+Program_Counter P(.clk(clk), .reset(reset), .PC_in(PC_in), .PC_out(PC));
+
+// PC Adder
+PCplus4 PCplus(.PC(PC), .PC_Plus_4(PC_Plus_4));
+
+// Instruction Memory
+Instruction_Memory InstMem(.clk(clk), .reset(reset), .read_addresss(PC), .instruction_out(instruction));
+
+// Register File
+Reg_File Registers(.clk(clk), .reset(reset), .RegWrite(RegWrite), .Rs1(Rs1), .Rs2(Rs2), .Rd(Rd), .Write_data(WriteData), .read_data1(data1), .read_data2(data2));
+
+// Immediate Generator
+ImmGen ImmGen(.instruction(instruction), .immExt(imm));
+
+// Control Unit
+Control_Unit Control(.opcode(opcode), .Branch(Branch), .MemRead(MemRead), .MemtoReg(MemtoReg), .MemWrite(MemWrite), .ALUSrc(ALUSrc), .RegWrite(RegWrite));
+
+// ALU Control
+ALU_Contorl ALUC(.opcode(opcode), .fun7(fun7), .fun3(fun3), .Control_out(Control_out));
+
+// ALU
+ALU_unit ALU(.A(data1), .B(Mux_out), .Control_in(Control_out), .ALU_Result(ALU_Result), .zero(zero));
+
+// ALU Mux
+Mux1 ALU_mux(.sel(ALUSrc), .A(data2), .B(imm), .Mux_out(Mux_out));
+
+// Adder
+Adder Adder(.in_1(PC), .in_2(imm), .Sum_out(Sum_out));
+
+// And_logic
+And_logic And(.zero(zero), .branch(Branch), .and_out(and_out));
+
+// PC_Mux
+Mux2 PC_Mux(.sel2(and_out), .A2(PC_Plus_4), .B2(Sum_out), .Mux_out2(PC_in));
+
+// Memory
+Data_Memory Mem(.clk(clk), .reset(reset), .MemWrite(MemWrite), .MemRead(MemRead), .DataAddr(ALU_Result), .ReadData(ReadData), .WriteData(data2));
+
+// Mem Mux
+Mux3 Mem_Mux(.sel3(MemtoReg), .A3(ALU_Result), .B3(ReadData), .Mux_out3(WriteData));
 
 endmodule
 
@@ -100,18 +171,17 @@ endmodule
 // control unit
 module Control_Unit(
     input [6:0] opcode,
-    output reg Branch, MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite,
-    output reg [1:0] ALUOp
+    output reg Branch, MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite
 );
 
 always @(*) begin
     case(opcode)
-    7'b0110011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b001000_10; // R-type
-    7'b0010011, 7'b0000011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b111100_00; // I-type
-    7'b0100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b100010_00; // S-type
-    7'b1100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b000001_01; // B-type
-    7'b1101111 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b000001_01; // J-type
-    default : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch, ALUOp} <= 8'b000000_00;
+    7'b0110011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b001000; // R-type
+    7'b0010011, 7'b0000011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b111100; // I-type
+    7'b0100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b100010; // S-type
+    7'b1100011 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b000001; // B-type
+    7'b1101111 : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b000001; // J-type
+    default : {ALUSrc, MemtoReg, RegWrite, MemRead, MemWrite, Branch} <= 6'b000000;
     endcase
 end 
 endmodule
@@ -241,4 +311,3 @@ module Adder(
 assign Sum_out = in_1 + in_2;
 
 endmodule
-
